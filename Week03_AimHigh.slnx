@@ -1,0 +1,8 @@
+﻿<Solution>
+  <Project Path="fps.UI.csproj" />
+  <Project Path="fps.Game.csproj" />
+  <Project Path="Unity.Microgame.Tutorials.csproj" />
+  <Project Path="fps.Gameplay.csproj" />
+  <Project Path="Unity.FPS.Tutorials.csproj" />
+  <Project Path="fps.Editor.csproj" />
+</Solution>

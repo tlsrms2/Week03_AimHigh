@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04f15d33d6eb8c147bac8e6022c3d424, type: 3}
+  m_Name: "\uC7AC\uC7A5\uC804 \uC18D\uB3C4 \uC99D\uAC00"
+  m_EditorClassIdentifier: fps.Game::Unity.FPS.Game.AimHighAugmentDefinition
+  Id: 3
+  DisplayName: "\uC7AC\uC7A5\uC804 \uC18D\uB3C4 \uC99D\uAC00"
+  Description: "\uC7AC\uC7A5\uC804 \uC18D\uB3C4\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4."
+  EffectType: 2
+  FloatValue: 1
+  IntValue: 0
