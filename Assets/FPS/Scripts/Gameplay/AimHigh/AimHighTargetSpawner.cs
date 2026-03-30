@@ -56,17 +56,24 @@ namespace Unity.FPS.Gameplay.AimHigh
 
         readonly List<AimHighTarget> m_ActiveTargets = new List<AimHighTarget>();
         GameFlowManager m_GameFlowManager;
+        AimHighEventManager m_EventManager;
         bool m_IsActive;
         float m_NextSpawnTime;
 
         void Awake()
         {
             m_GameFlowManager = FindFirstObjectByType<GameFlowManager>();
+            m_EventManager = FindFirstObjectByType<AimHighEventManager>();
         }
 
         void Update()
         {
             if (!m_IsActive || Time.time < m_NextSpawnTime)
+            {
+                return;
+            }
+
+            if (m_EventManager != null && m_EventManager.InhibitRegularSpawning)
             {
                 return;
             }
@@ -139,11 +146,16 @@ namespace Unity.FPS.Gameplay.AimHigh
             }
 
             IAimHighSpawnVolumeAware[] volumeAwareComponents =
-                targetInstance.GetComponents<IAimHighSpawnVolumeAware>();
+                targetInstance.GetComponentsInChildren<IAimHighSpawnVolumeAware>();
             for (int i = 0; i < volumeAwareComponents.Length; i++)
             {
                 volumeAwareComponents[i].SetSpawnVolume(selectedVolume.SpawnVolume);
             }
+        }
+
+        public bool GetRandomSpawnPosition(out Vector3 spawnPosition, out Quaternion spawnRotation)
+        {
+            return TryGetRandomAreaSpawnPose(out _, out spawnPosition, out spawnRotation);
         }
 
         bool TryGetRandomAreaSpawnPose(out AimHighSpawnVolumeRule selectedVolume, out Vector3 spawnPosition, out Quaternion spawnRotation)
@@ -178,7 +190,17 @@ namespace Unity.FPS.Gameplay.AimHigh
             return false;
         }
 
-        AimHighSpawnVolumeRule GetRandomAvailableVolume()
+        public BoxCollider GetRandomAvailableSpawnVolume()
+        {
+            var volumeRule = GetRandomAvailableVolume();
+            if (volumeRule != null)
+            {
+                return volumeRule.SpawnVolume;
+            }
+            return null;
+        }
+
+        public AimHighSpawnVolumeRule GetRandomAvailableVolume()
         {
             if (SpawnVolumes == null || SpawnVolumes.Count == 0)
             {
@@ -252,6 +274,7 @@ namespace Unity.FPS.Gameplay.AimHigh
 
         float GetCurrentSpawnInterval()
         {
+            float interval = DefaultSpawnInterval;
             int currentRound = m_GameFlowManager != null ? m_GameFlowManager.AimHighCurrentRoundIndex : 1;
             for (int i = 0; i < SpawnIntervalRules.Count; i++)
             {
@@ -265,11 +288,18 @@ namespace Unity.FPS.Gameplay.AimHigh
                                     (intervalRule.MaxRound <= 0 || currentRound <= intervalRule.MaxRound);
                 if (roundAllowed)
                 {
-                    return Mathf.Max(0.01f, intervalRule.SpawnInterval);
+                    interval = intervalRule.SpawnInterval;
+                    break;
                 }
             }
 
-            return Mathf.Max(0.01f, DefaultSpawnInterval);
+            AimHighEventManager eventManager = FindFirstObjectByType<AimHighEventManager>();
+            if (eventManager != null)
+            {
+                interval *= eventManager.GetCrisisSpawnMultiplier();
+            }
+
+            return Mathf.Max(0.01f, interval);
         }
 
         bool IsFarEnoughFromActiveTargets(Vector3 candidatePosition)

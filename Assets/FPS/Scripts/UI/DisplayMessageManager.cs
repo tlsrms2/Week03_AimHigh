@@ -55,6 +55,15 @@ namespace Unity.FPS.UI
             }
         }
 
+        public float GetDefaultToastRunTime()
+        {
+            if (MessageView != null)
+            {
+                return MessageView.TotalRunTime;
+            }
+            return 3f; // Fallback
+        }
+
         void OnDisplayMessageEvent(DisplayMessageEvent evt)
         {
             if (string.IsNullOrWhiteSpace(evt.Message) || MessageView == null || DisplayMessageRect == null)

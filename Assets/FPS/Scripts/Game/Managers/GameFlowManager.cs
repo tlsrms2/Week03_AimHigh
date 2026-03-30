@@ -43,6 +43,9 @@ namespace Unity.FPS.Game
         [Tooltip("Enables round-based Aim High flow")]
         public bool UseAimHighFlow;
 
+        [Tooltip("The maximum number of rounds to play. Reaching this round wins the game. Set to 0 for infinite progression.")]
+        public int AimHighMaxRounds = 10;
+
         [Tooltip("Delay before a round starts")]
         public float AimHighDelayBeforeRoundStart = 2f;
 
@@ -58,8 +61,14 @@ namespace Unity.FPS.Game
         [Tooltip("Quota growth per round")]
         public float AimHighQuotaGrowth = 1.75f;
 
+        [Tooltip("Custom quotas for specific rounds (optional). If index missing or value is 0, falls back to growth formula.")]
+        public int[] CustomRoundQuotas;
+
         [Tooltip("Reference to the score manager")]
         public AimHighScoreManager AimHighScoreManager;
+
+        [Tooltip("Reference to the event manager")]
+        public AimHighEventManager AimHighEventManager;
 
         [Tooltip("Target spawner behaviours implementing IAimHighTargetSpawner")]
         public MonoBehaviour[] AimHighTargetSpawners;
@@ -72,12 +81,6 @@ namespace Unity.FPS.Game
 
         [Tooltip("Disables passive ammo refill while using Aim High flow")]
         public bool DisablePassiveAmmoRefillInAimHigh = true;
-
-        [Tooltip("Default bullets loaded in the magazine for Aim High")]
-        public int AimHighDefaultClipSize = 30;
-
-        [Tooltip("Default reserve ammo available in Aim High")]
-        public int AimHighDefaultReserveAmmo = 90;
 
         public bool GameIsEnding { get; private set; }
         public int AimHighCurrentRoundIndex { get; private set; }
@@ -107,6 +110,11 @@ namespace Unity.FPS.Game
                 {
                     AimHighScoreManager = FindFirstObjectByType<AimHighScoreManager>();
                 }
+                
+                if (AimHighEventManager == null)
+                {
+                    AimHighEventManager = FindFirstObjectByType<AimHighEventManager>();
+                }
 
                 if (AimHighShopManager == null)
                 {
@@ -126,11 +134,6 @@ namespace Unity.FPS.Game
                 if (DisablePassiveAmmoRefillInAimHigh && m_AimHighWeaponInventory != null)
                 {
                     m_AimHighWeaponInventory.SetPassiveAmmoRefill(false);
-                }
-
-                if (m_AimHighWeaponInventory != null)
-                {
-                    m_AimHighWeaponInventory.PrepareAimHighWeapon(AimHighDefaultClipSize, AimHighDefaultReserveAmmo);
                 }
 
                 CacheAimHighSpawners();
@@ -218,7 +221,23 @@ namespace Unity.FPS.Game
 
         void BeginScheduledAimHighRound()
         {
+            if (AimHighEventManager != null && AimHighEventManager.TryStartEvent(m_ScheduledAimHighRoundIndex))
+            {
+                return; // EventManager will call StartAimHighRound after its dialogue
+            }
+
             StartAimHighRound(m_ScheduledAimHighRoundIndex);
+        }
+
+        public int PredictRoundQuota(int roundIndex)
+        {
+            int rIdx = Mathf.Max(1, roundIndex);
+            if (CustomRoundQuotas != null && rIdx <= CustomRoundQuotas.Length && CustomRoundQuotas[rIdx - 1] > 0)
+            {
+                return CustomRoundQuotas[rIdx - 1];
+            }
+            
+            return Mathf.RoundToInt(AimHighBaseQuota * Mathf.Pow(AimHighQuotaGrowth, rIdx - 1));
         }
 
         public void StartAimHighRound(int roundIndex)
@@ -229,10 +248,25 @@ namespace Unity.FPS.Game
             }
 
             AimHighCurrentRoundIndex = Mathf.Max(1, roundIndex);
-            AimHighCurrentQuota =
-                Mathf.RoundToInt(AimHighBaseQuota * Mathf.Pow(AimHighQuotaGrowth, AimHighCurrentRoundIndex - 1));
-            AimHighTimeRemaining = AimHighRoundDuration;
-            AimHighRoundActive = true;
+            
+            int baseQuota;
+            if (CustomRoundQuotas != null && AimHighCurrentRoundIndex <= CustomRoundQuotas.Length && CustomRoundQuotas[AimHighCurrentRoundIndex - 1] > 0)
+            {
+                baseQuota = CustomRoundQuotas[AimHighCurrentRoundIndex - 1];
+            }
+            else
+            {
+                baseQuota = Mathf.RoundToInt(AimHighBaseQuota * Mathf.Pow(AimHighQuotaGrowth, AimHighCurrentRoundIndex - 1));
+            }
+
+            if (AimHighEventManager != null) baseQuota = Mathf.RoundToInt(baseQuota * AimHighEventManager.GetContractQuotaMultiplier());
+            AimHighCurrentQuota = baseQuota;
+
+            float baseTime = AimHighRoundDuration;
+            if (AimHighEventManager != null) baseTime = AimHighEventManager.ApplyContractTimePenalty(baseTime);
+            AimHighTimeRemaining = baseTime;
+            
+            AimHighRoundActive = false; // Stay inactive for preparation
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
 
@@ -251,9 +285,12 @@ namespace Unity.FPS.Game
                 if (m_AimHighSpawnerCache[i] != null)
                 {
                     m_AimHighSpawnerCache[i].ClearTargets();
-                    m_AimHighSpawnerCache[i].Begin();
                 }
             }
+
+            // HUD is broadcast below. Spawning starts after 5 seconds.
+            CancelInvoke(nameof(ActuallyStartRound));
+            Invoke(nameof(ActuallyStartRound), 5f);
 
             AimHighRoundStartedEvent roundStartedEvent = Events.AimHighRoundStartedEvent;
             roundStartedEvent.RoundIndex = AimHighCurrentRoundIndex;
@@ -262,9 +299,26 @@ namespace Unity.FPS.Game
             EventManager.Broadcast(roundStartedEvent);
 
             DisplayMessageEvent displayMessageEvent = Events.DisplayMessageEvent;
-            displayMessageEvent.Message = $"Round {AimHighCurrentRoundIndex} - Quota {AimHighCurrentQuota}";
+            displayMessageEvent.Message = $"ROUND {AimHighCurrentRoundIndex} - PREPARING...";
             displayMessageEvent.DelayBeforeDisplay = 0f;
             EventManager.Broadcast(displayMessageEvent);
+        }
+
+        void ActuallyStartRound()
+        {
+            AimHighRoundActive = true;
+
+            for (int i = 0; i < m_AimHighSpawnerCache.Length; i++)
+            {
+                if (m_AimHighSpawnerCache[i] != null)
+                {
+                    m_AimHighSpawnerCache[i].Begin();
+                }
+            }
+
+            DisplayMessageEvent startMessageEvent = Events.DisplayMessageEvent;
+            startMessageEvent.Message = "START!";
+            EventManager.Broadcast(startMessageEvent);
         }
 
         public void FinishAimHighRound()
@@ -286,6 +340,12 @@ namespace Unity.FPS.Game
             int roundScore = AimHighScoreManager != null ? AimHighScoreManager.CurrentRoundScore : 0;
             int roundQuotaProgress = AimHighScoreManager != null ? AimHighScoreManager.CurrentRoundQuotaProgress : 0;
             bool success = roundQuotaProgress >= AimHighCurrentQuota;
+            
+            // In Trial mode, success is determined by whether the target was killed
+            if (AimHighEventManager != null && AimHighEventManager.IsEventActive && AimHighEventManager.CurrentEventType == AimHighEventType.Trial)
+            {
+                success = AimHighEventManager.TrialTargetKilled;
+            }
 
             AimHighRoundEndedEvent roundEndedEvent = Events.AimHighRoundEndedEvent;
             roundEndedEvent.RoundIndex = AimHighCurrentRoundIndex;
@@ -304,18 +364,25 @@ namespace Unity.FPS.Game
 
             if (success)
             {
-                DisplayMessageEvent shopDisplayMessageEvent = Events.DisplayMessageEvent;
-                shopDisplayMessageEvent.Message = "Shop Time";
-                shopDisplayMessageEvent.DelayBeforeDisplay = 0f;
-                EventManager.Broadcast(shopDisplayMessageEvent);
-
-                if (AimHighShopManager != null)
+                if (AimHighMaxRounds > 0 && AimHighCurrentRoundIndex >= AimHighMaxRounds)
                 {
-                    AimHighShopManager.BeginShopPhase(AimHighCurrentRoundIndex + 1, AimHighDelayBeforeShopOpen);
+                    TriggerWin();
                 }
                 else
                 {
-                    ScheduleAimHighRound(AimHighCurrentRoundIndex + 1, AimHighDelayBeforeNextRound);
+                    DisplayMessageEvent shopDisplayMessageEvent = Events.DisplayMessageEvent;
+                    shopDisplayMessageEvent.Message = "Shop Time";
+                    shopDisplayMessageEvent.DelayBeforeDisplay = 0f;
+                    EventManager.Broadcast(shopDisplayMessageEvent);
+
+                    if (AimHighShopManager != null)
+                    {
+                        AimHighShopManager.BeginShopPhase(AimHighCurrentRoundIndex + 1, AimHighDelayBeforeShopOpen);
+                    }
+                    else
+                    {
+                        ScheduleAimHighRound(AimHighCurrentRoundIndex + 1, AimHighDelayBeforeNextRound);
+                    }
                 }
             }
             else

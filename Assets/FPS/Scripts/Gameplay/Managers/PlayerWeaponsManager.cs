@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Unity.FPS.Game;
 using UnityEngine;
 using UnityEngine.Events;
@@ -467,6 +467,7 @@ namespace Unity.FPS.Gameplay
                 // when weapon found, remove it
                 if (m_WeaponSlots[i] == weaponInstance)
                 {
+                    int capturedAmmo = weaponInstance.CurrentReserveAmmo;
                     m_WeaponSlots[i] = null;
 
                     if (OnRemovedWeapon != null)
@@ -559,6 +560,26 @@ namespace Unity.FPS.Gameplay
             }
 
             return distanceBetweenSlots;
+        }
+
+        public void SwitchToWeapon(AimHighWeaponController weaponInstance)
+        {
+            for (int i = 0; i < m_WeaponSlots.Length; i++)
+            {
+                if (m_WeaponSlots[i] == weaponInstance)
+                {
+                    SwitchToWeaponIndex(i, true);
+                    return;
+                }
+            }
+        }
+
+        public void AddAmmoToDefaultWeapon(int amount)
+        {
+            if (m_WeaponSlots[0] != null)
+            {
+                m_WeaponSlots[0].AddAmmo(amount);
+            }
         }
 
         void OnWeaponSwitched(AimHighWeaponController newWeapon)

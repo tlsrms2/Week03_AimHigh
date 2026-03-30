@@ -179,9 +179,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: fps.Game::Unity.FPS.Game.AimHighWeaponController
   WeaponName: "\uAE30\uBCF8\uBB34\uAE30"
   CrosshairDataDefault:
-    CrosshairSprite: {fileID: 21300000, guid: a15b7c6479f130940bce68abed56ffbd, type: 3}
+    CrosshairSprite: {fileID: 21300000, guid: 10f19a594daa9f7428c1e34ed57b48e0, type: 3}
     CrosshairSize: 60
-    CrosshairColor: {r: 1, g: 1, b: 1, a: 1}
+    CrosshairColor: {r: 0, g: 0, b: 0, a: 1}
   CrosshairDataTargetInSight:
     CrosshairSprite: {fileID: 21300000, guid: 10f19a594daa9f7428c1e34ed57b48e0, type: 3}
     CrosshairSize: 60
@@ -191,7 +191,7 @@ MonoBehaviour:
   ShootType: 0
   ProjectilePrefab: {fileID: 8924682559891268397, guid: ec753d54f333bb944b8b04884ad63828,
     type: 3}
-  DelayBetweenShots: 0.5
+  DelayBetweenShots: 0.4
   BulletSpreadAngle: 0
   BulletsPerShot: 1
   ProjectileSpeedMultiplier: 1.5
@@ -200,8 +200,9 @@ MonoBehaviour:
   BaseDamageMultiplier: 1
   BaseProjectileRangeMultiplier: 1
   ClipSize: 6
-  MaxReserveAmmo: 12
-  ReloadDuration: 3
+  StartingReserveAmmo: 12
+  MaxReserveAmmo: 999
+  ReloadDuration: 2
   MuzzleFlashPrefab: {fileID: 748781637555137343, guid: 3f5b545b9a1e74c418b061bba5bb9e2c,
     type: 3}
   UnparentMuzzleFlash: 0

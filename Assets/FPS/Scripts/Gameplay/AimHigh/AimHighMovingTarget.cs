@@ -1,71 +1,93 @@
 using UnityEngine;
+using Unity.FPS.Game;
 
 namespace Unity.FPS.Gameplay.AimHigh
 {
     public class AimHighMovingTarget : MonoBehaviour, IAimHighSpawnVolumeAware, IAimHighMovingTarget
     {
-        [Tooltip("Horizontal movement speed inside the spawn volume")]
-        public float MoveSpeed = 2f;
+        [Header("Movement Settings")]
+        [Tooltip("How fast the target moves between waypoints")]
+        public float MovementSpeed = 5f;
 
-        [Tooltip("Extra padding kept from the left and right edge of the spawn volume")]
-        public float HorizontalPadding = 0.25f;
+        [Tooltip("Minimum wait time at each waypoint before picking a new one")]
+        public float MinWaitTime = 0.1f;
 
-        [Tooltip("Randomize the initial movement direction on spawn")]
-        public bool RandomizeInitialDirection = true;
+        [Tooltip("Maximum wait time at each waypoint")]
+        public float MaxWaitTime = 0.5f;
 
-        BoxCollider m_SpawnVolume;
-        float m_LocalY;
-        float m_LocalZ;
-        int m_MoveDirection = 1;
-        bool m_IsInitialized;
+        [Tooltip("How close the target needs to be to a waypoint before considering it reached")]
+        public float ReachThreshold = 0.1f;
 
-        void Start()
+        BoxCollider m_MovementZone;
+        Vector3 m_TargetTargetPosition;
+        float m_NextMoveTime;
+        bool m_IsWaiting;
+        Rigidbody m_Rigidbody;
+
+        void Awake()
         {
-            if (RandomizeInitialDirection)
+            m_Rigidbody = GetComponent<Rigidbody>();
+            if (m_Rigidbody != null)
             {
-                m_MoveDirection = Random.value < 0.5f ? -1 : 1;
+                m_Rigidbody.isKinematic = true;
             }
-        }
-
-        void Update()
-        {
-            if (!m_IsInitialized || m_SpawnVolume == null)
-            {
-                return;
-            }
-
-            Vector3 localPosition = m_SpawnVolume.transform.InverseTransformPoint(transform.position) - m_SpawnVolume.center;
-            float halfWidth = Mathf.Max(0f, (m_SpawnVolume.size.x * 0.5f) - HorizontalPadding);
-            float nextLocalX = localPosition.x + (MoveSpeed * m_MoveDirection * Time.deltaTime);
-
-            if (nextLocalX > halfWidth)
-            {
-                nextLocalX = halfWidth;
-                m_MoveDirection = -1;
-            }
-            else if (nextLocalX < -halfWidth)
-            {
-                nextLocalX = -halfWidth;
-                m_MoveDirection = 1;
-            }
-
-            Vector3 clampedLocalPosition = new Vector3(nextLocalX, m_LocalY, m_LocalZ) + m_SpawnVolume.center;
-            transform.position = m_SpawnVolume.transform.TransformPoint(clampedLocalPosition);
         }
 
         public void SetSpawnVolume(BoxCollider spawnVolume)
         {
-            m_SpawnVolume = spawnVolume;
-            if (m_SpawnVolume == null)
+            m_MovementZone = spawnVolume;
+            PickInitialWaypoint();
+        }
+
+        void PickInitialWaypoint()
+        {
+            if (m_MovementZone == null) return;
+            m_TargetTargetPosition = GetRandomPointInZone();
+            m_IsWaiting = false;
+        }
+
+        void Update()
+        {
+            if (m_MovementZone == null)
             {
-                m_IsInitialized = false;
                 return;
             }
 
-            Vector3 localPosition = m_SpawnVolume.transform.InverseTransformPoint(transform.position) - m_SpawnVolume.center;
-            m_LocalY = localPosition.y;
-            m_LocalZ = localPosition.z;
-            m_IsInitialized = true;
+            if (m_IsWaiting)
+            {
+                if (Time.time >= m_NextMoveTime)
+                {
+                    m_IsWaiting = false;
+                    m_TargetTargetPosition = GetRandomPointInZone();
+                }
+                return;
+            }
+
+            // Move towards the target position
+            transform.position = Vector3.MoveTowards(transform.position, m_TargetTargetPosition, MovementSpeed * Time.deltaTime);
+
+            // Check if reached
+            if (Vector3.Distance(transform.position, m_TargetTargetPosition) <= ReachThreshold)
+            {
+                m_IsWaiting = true;
+                m_NextMoveTime = Time.time + Random.Range(MinWaitTime, MaxWaitTime);
+            }
+        }
+
+        Vector3 GetRandomPointInZone()
+        {
+            if (m_MovementZone == null) return transform.position;
+
+            Vector3 size = m_MovementZone.size;
+            Vector3 center = m_MovementZone.center;
+
+            Vector3 localOffset = new Vector3(
+                Random.Range(-size.x * 0.5f, size.x * 0.5f),
+                Random.Range(-size.y * 0.5f, size.y * 0.5f),
+                Random.Range(-size.z * 0.5f, size.z * 0.5f)
+            );
+
+            return m_MovementZone.transform.TransformPoint(center + localOffset);
         }
     }
 }

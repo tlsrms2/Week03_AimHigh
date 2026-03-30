@@ -1,4 +1,4 @@
-﻿using Unity.FPS.Game;
+using Unity.FPS.Game;
 using Unity.FPS.Gameplay;
 using UnityEngine;
 using UnityEngine.UI;
@@ -65,32 +65,35 @@ namespace Unity.FPS.UI
         void UpdateCrosshairPointingAtEnemy(bool force)
         {
             AimHighWeaponController activeWeapon = m_WeaponsManager.GetActiveWeapon();
-            if (activeWeapon == null || m_CrosshairDataDefault.CrosshairSprite == null)
+            if (activeWeapon == null)
                 return;
 
             Camera referenceCamera = m_PlayerCharacterController != null ? m_PlayerCharacterController.PlayerCamera : null;
             m_CrosshairDataDefault = activeWeapon.GetCrosshairData(false, referenceCamera);
             m_CrosshairDataTarget = activeWeapon.GetCrosshairData(true, referenceCamera);
 
-            if ((force || !m_WasPointingAtEnemy) && m_WeaponsManager.IsPointingAtEnemy)
+            // Select current target based on pointing state
+            AimHighCrosshairData targetData = m_WeaponsManager.IsPointingAtEnemy ? m_CrosshairDataTarget : m_CrosshairDataDefault;
+
+            if (force || m_WeaponsManager.IsPointingAtEnemy != m_WasPointingAtEnemy)
             {
-                m_CurrentCrosshair = m_CrosshairDataTarget;
+                m_CurrentCrosshair = targetData;
                 CrosshairImage.sprite = m_CurrentCrosshair.CrosshairSprite;
-                m_CrosshairRectTransform.sizeDelta = m_CurrentCrosshair.CrosshairSize * Vector2.one;
+                
+                if (force)
+                {
+                    m_CrosshairRectTransform.sizeDelta = m_CurrentCrosshair.CrosshairSize * Vector2.one;
+                    CrosshairImage.color = m_CurrentCrosshair.CrosshairColor;
+                }
             }
-            else if ((force || m_WasPointingAtEnemy) && !m_WeaponsManager.IsPointingAtEnemy)
+            else
             {
-                m_CurrentCrosshair = m_CrosshairDataDefault;
-                CrosshairImage.sprite = m_CurrentCrosshair.CrosshairSprite;
-                m_CrosshairRectTransform.sizeDelta = m_CurrentCrosshair.CrosshairSize * Vector2.one;
+                // Always sync target data pointers in case bonuses changed
+                m_CurrentCrosshair = targetData;
             }
 
-            CrosshairImage.color = Color.Lerp(CrosshairImage.color, m_CurrentCrosshair.CrosshairColor,
-                Time.deltaTime * CrosshairUpdateshrpness);
-
-            m_CrosshairRectTransform.sizeDelta = Mathf.Lerp(m_CrosshairRectTransform.sizeDelta.x,
-                m_CurrentCrosshair.CrosshairSize,
-                Time.deltaTime * CrosshairUpdateshrpness) * Vector2.one;
+            CrosshairImage.color = m_CurrentCrosshair.CrosshairColor;
+            m_CrosshairRectTransform.sizeDelta = m_CurrentCrosshair.CrosshairSize * Vector2.one;
 
             UpdateDisplayedCrosshairSize(activeWeapon);
         }

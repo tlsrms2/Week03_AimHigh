@@ -52,10 +52,7 @@ namespace Unity.FPS.UI
 
         void OnQuotaChanged(AimHighQuotaChangedEvent evt)
         {
-            if (evt.RoundIndex != m_CurrentRound)
-            {
-                return;
-            }
+            m_CurrentRound = evt.RoundIndex;
 
             m_CurrentQuota = evt.Quota;
             m_CurrentQuotaProgress = evt.QuotaProgress;
@@ -74,10 +71,7 @@ namespace Unity.FPS.UI
 
         void OnRoundEnded(AimHighRoundEndedEvent evt)
         {
-            if (evt.RoundIndex != m_CurrentRound)
-            {
-                return;
-            }
+            m_CurrentRound = evt.RoundIndex;
 
             EnsureToast();
             m_CurrentQuotaProgress = evt.QuotaProgress;
@@ -98,6 +92,7 @@ namespace Unity.FPS.UI
                 return;
             }
 
+            ObjectiveView.gameObject.SetActive(true);
             m_CurrentToast = ObjectiveView;
             ForceObjectiveViewVisible();
 
@@ -135,7 +130,7 @@ namespace Unity.FPS.UI
                 return;
             }
 
-            m_CurrentToast.CounterTextContent.text = $"{m_CurrentQuotaProgress} / {m_CurrentQuota}";
+            m_CurrentToast.CounterTextContent.text = $"$ {m_CurrentQuotaProgress} / {m_CurrentQuota}";
             RebuildToastLayout();
         }
 

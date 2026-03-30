@@ -48,7 +48,7 @@ namespace Unity.FPS.UI
             AimHighWeaponController activeWeapon = m_PlayerWeaponsManager.GetActiveWeapon();
             if (activeWeapon == null)
             {
-                AmmoText.text = "AMMO --";
+                AmmoText.text = "-- / --";
                 return;
             }
 
@@ -57,16 +57,16 @@ namespace Unity.FPS.UI
                 if (activeWeapon.IsReloading)
                 {
                     AmmoText.text =
-                        $"AMMO {activeWeapon.GetCurrentAmmo()}/{activeWeapon.GetMagazineCapacity()} | {activeWeapon.GetCarriedPhysicalBullets()}  RELOAD {activeWeapon.GetReloadTimeRemaining():0.0}s";
+                        $"{activeWeapon.GetCurrentAmmo()} / {activeWeapon.GetCarriedPhysicalBullets()}  RELOAD {activeWeapon.GetReloadTimeRemaining():0.0}s";
                 }
                 else
                 {
-                    AmmoText.text = $"AMMO {activeWeapon.GetCurrentAmmo()}/{activeWeapon.GetMagazineCapacity()} | {activeWeapon.GetCarriedPhysicalBullets()}";
+                    AmmoText.text = $"{activeWeapon.GetCurrentAmmo()} / {activeWeapon.GetCarriedPhysicalBullets()}";
                 }
             }
             else
             {
-                AmmoText.text = $"AMMO {activeWeapon.GetCurrentAmmo()}";
+                AmmoText.text = $"{activeWeapon.GetCurrentAmmo()}";
             }
         }
 
@@ -82,7 +82,7 @@ namespace Unity.FPS.UI
         {
             if (QuotaText != null)
             {
-                QuotaText.text = $"QUOTA {evt.QuotaProgress} / {evt.Quota}";
+                QuotaText.text = $"$ {evt.QuotaProgress} / {evt.Quota}";
             }
 
             if (TimerText != null)
@@ -105,7 +105,7 @@ namespace Unity.FPS.UI
 
             if (CurrencyText != null)
             {
-                CurrencyText.text = $"GOLD {evt.Currency}";
+                CurrencyText.text = $"${evt.Currency}";
             }
         }
 

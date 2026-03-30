@@ -18,6 +18,7 @@ namespace Unity.FPS.Game
         public int Currency { get; private set; }
         public float QuotaMultiplier { get; private set; }
         public float GoldMultiplier { get; private set; }
+        public int FlatGoldBonus { get; private set; }
         public float ShopRollCostMultiplier { get; private set; } = 1f;
         public float AmmoPurchaseCostMultiplier { get; private set; } = 1f;
         public float DistanceGoldBonusFactor { get; private set; }
@@ -67,18 +68,29 @@ namespace Unity.FPS.Game
                 return 0;
             }
 
+            // 1. 기본 골드 계산 (전역 골드 배수 적용)
             float computedGold = baseGold * GoldMultiplier;
-            computedGold *= 1f + Mathf.Max(0f, distance) * Mathf.Max(0f, DistanceGoldBonusFactor);
 
+            // 2. 거리 보너스만 '퍼센트(곱연산)'로 적용
+            float distanceFactor = 1f + (Mathf.Sqrt(Mathf.Max(0f, distance)) * Mathf.Max(0f, DistanceGoldBonusFactor));
+            computedGold *= distanceFactor;
+
+            // 3. 움직이는 타겟 보너스를 '절대값'으로 더함
             if (isMovingTarget)
             {
-                computedGold *= Mathf.Max(1f, MovingTargetGoldMultiplier);
+                // 참고: 기존 변수명은 Multiplier지만, 이제는 절대값(예: +10G)으로 더해집니다.
+                computedGold += MovingTargetGoldMultiplier; 
             }
 
+            // 4. 고정 보너스를 '절대값'으로 더함
+            computedGold += FlatGoldBonus;
+
+            // 최종 정산
             int finalGold = Mathf.Max(1, Mathf.RoundToInt(computedGold));
             Currency += finalGold;
             CurrentRoundQuotaProgress += finalGold;
             BroadcastScoreChanged();
+            
             return finalGold;
         }
 
@@ -94,6 +106,22 @@ namespace Unity.FPS.Game
             return true;
         }
 
+        public int SubtractCurrency(int amount)
+        {
+            if (amount <= 0) return 0;
+            int actualSubtract = Mathf.Min(Currency, amount);
+            Currency -= actualSubtract;
+            BroadcastScoreChanged();
+            return actualSubtract;
+        }
+
+        public void AddDirectCurrency(int amount)
+        {
+            if (amount <= 0) return;
+            Currency += amount;
+            BroadcastScoreChanged();
+        }
+
         public void AddQuotaMultiplier(float amount)
         {
             QuotaMultiplier = Mathf.Max(1f, QuotaMultiplier + amount);
@@ -103,6 +131,12 @@ namespace Unity.FPS.Game
         public void AddGoldMultiplier(float amount)
         {
             GoldMultiplier = Mathf.Max(1f, GoldMultiplier + amount);
+            BroadcastScoreChanged();
+        }
+
+        public void AddFlatGoldBonus(int amount)
+        {
+            FlatGoldBonus += amount;
             BroadcastScoreChanged();
         }
 

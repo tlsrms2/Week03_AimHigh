@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Unity.FPS.Game;
 using UnityEngine;
 
@@ -233,7 +233,7 @@ namespace Unity.FPS.Gameplay
             if (AreaOfDamage)
             {
                 // area damage
-                float damageAmount = Damage * m_ProjectileBase.SourceDamageMultiplier;
+                    float damageAmount = (Damage + m_ProjectileBase.SourceFlatDamageBonus) * m_ProjectileBase.SourceDamageMultiplier;
 
                 AreaOfDamage.InflictDamageInArea(damageAmount, point, HittableLayers, k_TriggerInteraction,
                     m_ProjectileBase.Owner);
@@ -249,7 +249,7 @@ namespace Unity.FPS.Gameplay
 
                 if (damageable)
                 {
-                    float damageAmount = Damage * m_ProjectileBase.SourceDamageMultiplier;
+                    float damageAmount = (Damage + m_ProjectileBase.SourceFlatDamageBonus) * m_ProjectileBase.SourceDamageMultiplier;
 
                     damageable.InflictDamage(damageAmount, false, m_ProjectileBase.Owner);
                 }

@@ -109,8 +109,13 @@ namespace Unity.FPS.Gameplay.AimHigh
                 float distance = 0f;
                 if (damageSource != null)
                 {
-                    distance = Vector3.Distance(damageSource.transform.position, transform.position);
-                    distanceMultiplier += distance * DistanceScoreFactor;
+                    // Always measure distance from the PLAYER for long-range bonuses
+                    var player = FindFirstObjectByType<Unity.FPS.Gameplay.PlayerCharacterController>();
+                    if (player != null)
+                    {
+                        distance = Vector3.Distance(player.transform.position, transform.position);
+                        distanceMultiplier += distance * DistanceScoreFactor;
+                    }
                 }
 
                 m_ScoreManager.AddScore(BaseScore, distanceMultiplier, ScoreMultiplier, FlatBonus);
@@ -118,6 +123,14 @@ namespace Unity.FPS.Gameplay.AimHigh
                 if (grantedGold > 0)
                 {
                     AimHighFloatingText.Spawn($"+{grantedGold}", transform.position + GoldPopupOffset, GoldPopupColor);
+                }
+            }
+            else if (!grantScore)
+            {
+                AimHighEventManager eventManager = FindFirstObjectByType<AimHighEventManager>();
+                if (eventManager != null)
+                {
+                    eventManager.ReportMissedTarget(transform.position);
                 }
             }
 

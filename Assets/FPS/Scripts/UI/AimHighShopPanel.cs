@@ -41,13 +41,24 @@ namespace Unity.FPS.UI
         [Tooltip("Descriptions for the augment choice buttons")]
         public TextMeshProUGUI[] AugmentOptionDescriptions;
 
+        [Header("Contract UI")]
+        [Tooltip("Root object for the special contract button (child of the horizontal layout)")]
+        public GameObject ContractButtonRoot;
+
+        [Tooltip("Description text for the contract offer")]
+        public TextMeshProUGUI ContractDescText;
+
         AimHighShopManager m_ShopManager;
         AimHighScoreManager m_ScoreManager;
+        GameFlowManager m_GameFlowManager;
+        AimHighEventManager m_EventManager;
 
         void Awake()
         {
             m_ShopManager = FindFirstObjectByType<AimHighShopManager>();
             m_ScoreManager = FindFirstObjectByType<AimHighScoreManager>();
+            m_GameFlowManager = FindFirstObjectByType<GameFlowManager>();
+            m_EventManager = FindFirstObjectByType<AimHighEventManager>();
             BindButtons();
 
             if (m_ShopManager != null)
@@ -70,6 +81,14 @@ namespace Unity.FPS.UI
             if (RollAugmentButton != null)
             {
                 RollAugmentButton.onClick.AddListener(RollAugments);
+            }
+
+            if (ContractButtonRoot != null && ContractButtonRoot.TryGetComponent(out Button contractBtn))
+            {
+                contractBtn.onClick.AddListener(() => 
+                {
+                    if (m_ShopManager != null) m_ShopManager.AcceptContract();
+                });
             }
 
             if (ExitButton != null)
@@ -154,7 +173,15 @@ namespace Unity.FPS.UI
 
             if (NextRoundText != null)
             {
-                NextRoundText.text = $"Next Round {m_ShopManager.PendingNextRoundIndex}";
+                int nextRoundIndex = m_ShopManager.PendingNextRoundIndex;
+                string text = $"Next Round {nextRoundIndex}";
+                if (m_GameFlowManager != null && m_EventManager != null)
+                {
+                    int quota = m_GameFlowManager.PredictRoundQuota(nextRoundIndex);
+                    quota = Mathf.RoundToInt(quota * m_EventManager.GetContractQuotaMultiplier());
+                    text = $"Next Round {nextRoundIndex} (Quota: {quota})";
+                }
+                NextRoundText.text = text;
             }
 
             if (AugmentSelectionPanelRoot != null)
@@ -169,7 +196,7 @@ namespace Unity.FPS.UI
 
             if (BuyAmmoCostText != null)
             {
-                BuyAmmoCostText.text = $"{m_ShopManager.CurrentAmmoPurchaseCost}";
+                BuyAmmoCostText.text = $"${m_ShopManager.CurrentAmmoPurchaseCost}";
             }
 
             if (RollAugmentButton != null && m_ScoreManager != null)
@@ -183,7 +210,33 @@ namespace Unity.FPS.UI
 
             if (RollAugmentCostText != null)
             {
-                RollAugmentCostText.text = $"{m_ShopManager.CurrentAugmentRollCost}";
+                RollAugmentCostText.text = $"${m_ShopManager.CurrentAugmentRollCost}";
+            }
+
+            // --- Contract UI logic ---
+            var contractOffer = m_ShopManager.CurrentContractOffer;
+            bool hasContractOffer = contractOffer != null;
+            bool alreadyAccepted = m_ShopManager.ContractAcceptedThisShop;
+            
+            if (ContractButtonRoot != null)
+            {
+                // Show if there IS an offer OR it WAS already accepted (to prevent layout shift)
+                ContractButtonRoot.SetActive(hasContractOffer || alreadyAccepted);
+                
+                if (ContractButtonRoot.TryGetComponent(out Button contractBtn))
+                {
+                    contractBtn.interactable = hasContractOffer;
+                }
+
+                if (hasContractOffer)
+                {
+                    if (ContractDescText != null) ContractDescText.text = contractOffer.Description;
+                }
+                else if (alreadyAccepted && m_ShopManager.LastAcceptedContractOffer != null)
+                {
+                    if (ContractDescText != null) 
+                        ContractDescText.text = m_ShopManager.LastAcceptedContractOffer.Description;
+                }
             }
 
             if (m_ShopManager.IsShopOpen && EventSystem.current != null && EventSystem.current.currentSelectedGameObject == null)
@@ -233,17 +286,30 @@ namespace Unity.FPS.UI
                     continue;
                 }
 
-                AimHighAugmentDefinition offer = m_ShopManager.CurrentAugmentOffers[i];
+                AimHighAugmentInstance offer = m_ShopManager.CurrentAugmentOffers[i];
                 if (AugmentOptionLabels != null && i < AugmentOptionLabels.Length && AugmentOptionLabels[i] != null)
                 {
-                    AugmentOptionLabels[i].text = offer.DisplayName;
+                    AugmentOptionLabels[i].text = $"{offer.Definition.DisplayName}";
                 }
 
                 if (AugmentOptionDescriptions != null &&
                     i < AugmentOptionDescriptions.Length &&
                     AugmentOptionDescriptions[i] != null)
                 {
-                    AugmentOptionDescriptions[i].text = offer.Description;
+                    bool isReduction = offer.Definition.EffectType == AimHighAugmentEffectType.ShopRollCostReduction ||
+                                       offer.Definition.EffectType == AimHighAugmentEffectType.AmmoPurchaseCostReduction;
+                    string prefix = isReduction ? "-" : "+";
+                    string bonusString = offer.FloatValue != 0f ? $"{prefix}{offer.FloatValue * 100:F0}%" : $"{prefix}{offer.IntValue}";
+                    AugmentOptionDescriptions[i].text = $"{offer.Definition.Description} ({bonusString})";
+                }
+
+                if (AugmentOptionButtons[i] != null)
+                {
+                    Image buttonImage = AugmentOptionButtons[i].GetComponent<Image>();
+                    if (buttonImage != null)
+                    {
+                        buttonImage.color = offer.RarityColor;
+                    }
                 }
             }
         }

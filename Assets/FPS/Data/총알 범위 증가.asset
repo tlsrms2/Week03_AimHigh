@@ -16,5 +16,24 @@ MonoBehaviour:
   DisplayName: "\uCD1D\uC54C \uBC94\uC704 \uC99D\uAC00"
   Description: "\uCD1D\uC54C \uBC94\uC704\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4."
   EffectType: 4
-  FloatValue: 0.2
-  IntValue: 0
+  Rarities:
+  - Rarity: 0
+    FloatValue: 0.1
+    IntValue: 0
+    Weight: 0.5
+  - Rarity: 1
+    FloatValue: 0.15
+    IntValue: 0
+    Weight: 0.3
+  - Rarity: 2
+    FloatValue: 0.25
+    IntValue: 0
+    Weight: 0.15
+  - Rarity: 3
+    FloatValue: 0.5
+    IntValue: 0
+    Weight: 0.05
+  NormalColor: {r: 0.735849, g: 0.735849, b: 0.735849, a: 1}
+  RareColor: {r: 0.39048594, g: 0.39048594, b: 0.7075472, a: 1}
+  EpicColor: {r: 0.6037736, g: 0.16233535, b: 0.6037736, a: 1}
+  LegendaryColor: {r: 0.7264151, g: 0.6895565, b: 0.26383942, a: 1}

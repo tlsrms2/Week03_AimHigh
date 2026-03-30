@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04f15d33d6eb8c147bac8e6022c3d424, type: 3}
+  m_Name: "\uACE8\uB4DC \uBCF4\uB108\uC2A4(\uBA3C \uAC70\uB9AC \uC801)"
+  m_EditorClassIdentifier: fps.Game::Unity.FPS.Game.AimHighAugmentDefinition
+  Id: 9
+  DisplayName: "\uACE8\uB4DC \uBCF4\uB108\uC2A4"
+  Description: "\uBA40\uB9AC \uC788\uB294 \uD0C0\uAC9F\uC744 \uB9DE\uCD94\uBA74 \uACE8\uB4DC\uB97C
+    \uB354 \uC5BB\uC2B5\uB2C8\uB2E4."
+  EffectType: 8
+  Rarities:
+  - Rarity: 0
+    FloatValue: 0.05
+    IntValue: 0
+    Weight: 0.5
+  - Rarity: 1
+    FloatValue: 0.1
+    IntValue: 0
+    Weight: 0.3
+  - Rarity: 2
+    FloatValue: 0.15
+    IntValue: 0
+    Weight: 0.15
+  - Rarity: 3
+    FloatValue: 0.2
+    IntValue: 0
+    Weight: 0.05
+  NormalColor: {r: 0.735849, g: 0.735849, b: 0.735849, a: 1}
+  RareColor: {r: 0.39048594, g: 0.39048594, b: 0.7075472, a: 1}
+  EpicColor: {r: 0.6037736, g: 0.16233535, b: 0.6037736, a: 1}
+  LegendaryColor: {r: 0.7264151, g: 0.6895565, b: 0.26383942, a: 1}

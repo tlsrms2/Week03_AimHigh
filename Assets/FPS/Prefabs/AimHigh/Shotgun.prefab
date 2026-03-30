@@ -191,20 +191,27 @@ MonoBehaviour:
   ShootType: 0
   ProjectilePrefab: {fileID: 8924682559891268397, guid: f05c7e6fbbfbe824388456bb4abff9d4,
     type: 3}
-  DelayBetweenShots: 1
+  DelayBetweenShots: 0.2
   BulletSpreadAngle: 5
   BulletsPerShot: 6
+  ProjectileSpeedMultiplier: 1.5
   SyncSpreadToCrosshairSize: 1
   FallbackCrosshairSize: 32
   BaseDamageMultiplier: 5
   BaseProjectileRangeMultiplier: 1
   ClipSize: 999
-  MaxReserveAmmo: 0
+  StartingReserveAmmo: 999
+  MaxReserveAmmo: 999
   ReloadDuration: 2
   MuzzleFlashPrefab: {fileID: 748781637555137343, guid: 4f5d4e5eaa0e5104791549cea3dc3f23,
     type: 3}
   UnparentMuzzleFlash: 0
   ShootSfx: {fileID: 8300000, guid: 53d2238f4c4b2aa4f8e559c7af9e0126, type: 3}
+  DrawDebugShotRays: 0
+  DebugRayDuration: 1.5
+  DebugRayLength: 100
+  DebugCenterRayColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  DebugShotRayColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!1 &3023500320372261254
 GameObject:
   m_ObjectHideFlags: 0

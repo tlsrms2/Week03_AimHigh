@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 namespace Unity.FPS.UI
 {
@@ -11,6 +12,9 @@ namespace Unity.FPS.UI
     {
         [Tooltip("Root GameObject of the menu used to toggle its activation")]
         public GameObject MenuRoot;
+
+        [Tooltip("Name of the scene to load when returning to menu")]
+        public string MainMenuSceneName = "MenuScene";
 
         [Tooltip("Master volume when menu is open")] [Range(0.001f, 1f)]
         public float VolumeWhenMenuOpen = 0.5f;
@@ -104,23 +108,18 @@ namespace Unity.FPS.UI
                 Cursor.visible = false;
             }
 
-            if (!shopIsOpen && Keyboard.current.escapeKey.wasPressedThisFrame)
-            {
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
-            }
+            bool menuActionPressed = m_MenuAction != null && m_MenuAction.WasPressedThisFrame();
+            bool cancelActionPressed = m_CancelAction != null && m_CancelAction.WasPressedThisFrame();
 
-            if (m_MenuAction.WasPressedThisFrame()
-                || (MenuRoot != null && MenuRoot.activeSelf && m_CancelAction.WasPressedThisFrame()))
+            if (!shopIsOpen && (menuActionPressed || cancelActionPressed))
             {
                 if (ControlImage != null && ControlImage.activeSelf)
                 {
                     ControlImage.SetActive(false);
                     return;
                 }
-
+                
                 SetPauseMenuActivation(MenuRoot != null && !MenuRoot.activeSelf);
-
             }
 
             if (m_NavigateAction.ReadValue<Vector2>().y != 0)
@@ -192,6 +191,13 @@ namespace Unity.FPS.UI
             {
                 ControlImage.SetActive(show);
             }
+        }
+
+        public void ReturnToMainMenu()
+        {
+            Time.timeScale = 1f;
+            AudioUtility.SetMasterVolume(1);
+            SceneManager.LoadScene(MainMenuSceneName);
         }
     }
 }

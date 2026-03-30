@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using Unity.FPS.Game;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -53,7 +53,10 @@ namespace Unity.FPS.UI
 
         void Update()
         {
-            PreviewImage.enabled = PreviewImage.texture != null;
+            if (PreviewImage != null)
+            {
+                PreviewImage.enabled = PreviewImage.texture != null;
+            }
 
             if (m_IsFeatureDisable)
                 return;

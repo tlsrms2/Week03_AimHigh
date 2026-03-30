@@ -52,7 +52,8 @@ namespace Unity.FPS.Game
 
         [Header("Ammo")]
         public int ClipSize = 30;
-        public int MaxReserveAmmo = 90;
+        public int StartingReserveAmmo = 90;
+        public int MaxReserveAmmo = 999;
         public float ReloadDuration = 1f;
 
         [Header("Audio & Visual")]
@@ -91,12 +92,19 @@ namespace Unity.FPS.Game
         public float CurrentAmmoRatio { get; private set; }
         public Vector3 MuzzleWorldVelocity { get; private set; }
         public float DamageMultiplier { get; private set; }
+        public float FlatDamageBonus { get; private set; }
         public float ReloadSpeedMultiplier { get; private set; }
+        public float FlatReloadDurationReduction { get; private set; }
         public float CrosshairSizeMultiplier { get; private set; }
+        public float FlatCrosshairSizeBonus { get; private set; }
         public float FireRateMultiplier { get; private set; }
+        public float FlatFireRateBonus { get; private set; }
+        public int CurrentReserveAmmo => m_CurrentReserveAmmo;
+        public int CurrentAmmoInClip => m_CurrentAmmoInClip;
         public int CurrentClipSize => Mathf.Max(1, ClipSize + m_AdditionalClipSize);
 
         AudioSource m_ShootAudioSource;
+        AimHighEventManager m_EventManager;
         float m_LastTimeShot = Mathf.NegativeInfinity;
         float m_ReloadEndTime = Mathf.NegativeInfinity;
         int m_CurrentAmmoInClip;
@@ -110,13 +118,19 @@ namespace Unity.FPS.Game
             DebugUtility.HandleErrorIfNullGetComponent<AudioSource, AimHighWeaponController>(m_ShootAudioSource, this,
                 gameObject);
 
+            m_EventManager = FindFirstObjectByType<AimHighEventManager>();
+
             DamageMultiplier = Mathf.Max(0.01f, BaseDamageMultiplier);
+            FlatDamageBonus = 0f;
             ReloadSpeedMultiplier = 1f;
+            FlatReloadDurationReduction = 0f;
             CrosshairSizeMultiplier = Mathf.Max(1f, BaseProjectileRangeMultiplier);
+            FlatCrosshairSizeBonus = 0f;
             FireRateMultiplier = 1f;
+            FlatFireRateBonus = 0f;
 
             m_CurrentAmmoInClip = CurrentClipSize;
-            m_CurrentReserveAmmo = Mathf.Max(0, MaxReserveAmmo);
+            m_CurrentReserveAmmo = Mathf.Max(0, StartingReserveAmmo);
             CurrentAmmoRatio = (float)m_CurrentAmmoInClip / CurrentClipSize;
             m_LastMuzzlePosition = WeaponMuzzle != null ? WeaponMuzzle.position : transform.position;
         }
@@ -157,6 +171,11 @@ namespace Unity.FPS.Game
         public int GetMagazineCapacity()
         {
             return CurrentClipSize;
+        }
+
+        public int GetBaseClipSize()
+        {
+            return ClipSize;
         }
 
         public int GetCarriedPhysicalBullets()
@@ -207,6 +226,11 @@ namespace Unity.FPS.Game
             m_CurrentReserveAmmo = Mathf.Clamp(m_CurrentReserveAmmo + Mathf.RoundToInt(amount), 0, MaxReserveAmmo);
         }
 
+        public void SetReserveAmmo(int amount)
+        {
+            m_CurrentReserveAmmo = Mathf.Clamp(amount, 0, MaxReserveAmmo);
+        }
+
         public void FillAmmo()
         {
             m_CurrentAmmoInClip = CurrentClipSize;
@@ -219,18 +243,23 @@ namespace Unity.FPS.Game
             DamageMultiplier = Mathf.Max(0.01f, DamageMultiplier + amount);
         }
 
+        public void AddFlatDamageBonus(float amount)
+        {
+            FlatDamageBonus += amount;
+        }
+
         public void AddReloadSpeedMultiplier(float amount)
         {
             ReloadSpeedMultiplier = Mathf.Max(0.1f, ReloadSpeedMultiplier + amount);
         }
 
+        public void AddFlatReloadDurationReduction(float amount)
+        {
+            FlatReloadDurationReduction += amount;
+        }
+
         public void AddClipSizeBonus(int amount)
         {
-            if (amount <= 0)
-            {
-                return;
-            }
-
             m_AdditionalClipSize += amount;
             m_CurrentAmmoInClip = Mathf.Min(CurrentClipSize, m_CurrentAmmoInClip + amount);
             UpdateAmmoRatio();
@@ -241,9 +270,20 @@ namespace Unity.FPS.Game
             FireRateMultiplier = Mathf.Max(0.1f, FireRateMultiplier + amount);
         }
 
+        public void AddFlatFireRateBonus(float amount)
+        {
+            FlatFireRateBonus += amount;
+        }
+
         public void AddProjectileRangeMultiplier(float amount)
         {
             CrosshairSizeMultiplier = Mathf.Max(1f, CrosshairSizeMultiplier + amount);
+            DisplayedCrosshairSizePixels = 0f;
+        }
+
+        public void AddFlatProjectileRangeBonus(float amount)
+        {
+            FlatCrosshairSizeBonus += amount;
             DisplayedCrosshairSizePixels = 0f;
         }
 
@@ -253,9 +293,13 @@ namespace Unity.FPS.Game
             MaxReserveAmmo = Mathf.Max(0, reserveAmmo);
             m_AdditionalClipSize = 0;
             DamageMultiplier = Mathf.Max(0.01f, BaseDamageMultiplier);
+            FlatDamageBonus = 0f;
             ReloadSpeedMultiplier = 1f;
+            FlatReloadDurationReduction = 0f;
             CrosshairSizeMultiplier = Mathf.Max(1f, BaseProjectileRangeMultiplier);
+            FlatCrosshairSizeBonus = 0f;
             FireRateMultiplier = 1f;
+            FlatFireRateBonus = 0f;
             DisplayedCrosshairSizePixels = 0f;
             m_CurrentAmmoInClip = CurrentClipSize;
             m_CurrentReserveAmmo = MaxReserveAmmo;
@@ -304,7 +348,9 @@ namespace Unity.FPS.Game
 
             if (hasLockedTarget && lockedDamageable != null && lockedDamageable.Health != null)
             {
-                lockedDamageable.Health.Kill();
+                // Use TakeDamage instead of Kill() to preserve the damage source (Owner),
+                // so that distance-based gold bonus can be correctly calculated.
+                lockedDamageable.Health.TakeDamage(lockedDamageable.Health.MaxHealth, Owner);
             }
 
             if (MuzzleFlashPrefab != null)
@@ -341,13 +387,20 @@ namespace Unity.FPS.Game
             }
 
             IsReloading = true;
-            float reloadDuration = Mathf.Max(0.01f, ReloadDuration / ReloadSpeedMultiplier);
+            float reloadDuration = Mathf.Max(0.01f, (ReloadDuration - FlatReloadDurationReduction) / ReloadSpeedMultiplier);
+            
+            // Apply contract penalty if active
+            if (m_EventManager != null)
+            {
+                reloadDuration = m_EventManager.ApplyContractReloadPenalty(reloadDuration);
+            }
+
             m_ReloadEndTime = Time.time + reloadDuration;
         }
 
         float GetCurrentDelayBetweenShots()
         {
-            return Mathf.Max(0.01f, DelayBetweenShots / Mathf.Max(0.1f, FireRateMultiplier));
+            return Mathf.Max(0.01f, (DelayBetweenShots - FlatFireRateBonus) / Mathf.Max(0.1f, FireRateMultiplier));
         }
 
         void FinishReload()
@@ -445,7 +498,27 @@ namespace Unity.FPS.Game
         int GetScaledCrosshairSize(int authoredSize)
         {
             int baseSize = authoredSize > 0 ? authoredSize : FallbackCrosshairSize;
-            return Mathf.Max(1, Mathf.RoundToInt(baseSize * CrosshairSizeMultiplier));
+            return Mathf.Max(1, Mathf.RoundToInt(baseSize * CrosshairSizeMultiplier + FlatCrosshairSizeBonus));
+        }
+
+        public float GetBaseDamage()
+        {
+            if (ProjectilePrefab != null)
+            {
+                // Use string-based lookup and reflection to avoid cyclic assembly dependencies
+                var proj = ProjectilePrefab.GetComponent("ProjectileStandard");
+                if (proj != null)
+                {
+                    var field = proj.GetType().GetField("Damage");
+                    if (field != null) return (float)field.GetValue(proj);
+                }
+            }
+            return 0f;
+        }
+
+        public float GetFinalDamage()
+        {
+            return (GetBaseDamage() + FlatDamageBonus) * DamageMultiplier;
         }
 
         bool TryGetDirectionToTargetInsideCrosshair(Camera referenceCamera, Transform shootTransform, out Vector3 direction)

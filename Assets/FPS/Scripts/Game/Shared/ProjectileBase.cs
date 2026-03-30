@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.Events;
 
 namespace Unity.FPS.Game
@@ -12,6 +12,7 @@ namespace Unity.FPS.Game
         public float InitialCharge { get; private set; }
         public AimHighWeaponController SourceWeapon { get; private set; }
         public float SourceDamageMultiplier { get; private set; } = 1f;
+        public float SourceFlatDamageBonus { get; private set; } = 0f;
         public float SourceProjectileRangeMultiplier { get; private set; } = 1f;
 
         public UnityAction OnShoot;
@@ -25,6 +26,7 @@ namespace Unity.FPS.Game
             InheritedMuzzleVelocity = controller.MuzzleWorldVelocity;
             InitialCharge = 0f;
             SourceDamageMultiplier = controller.DamageMultiplier;
+            SourceFlatDamageBonus = controller.FlatDamageBonus;
             SourceProjectileRangeMultiplier = 1f;
 
             OnShoot?.Invoke();

@@ -16,5 +16,24 @@ MonoBehaviour:
   DisplayName: "\uB370\uBBF8\uC9C0 \uC99D\uAC00"
   Description: "\uACF5\uACA9 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4."
   EffectType: 1
-  FloatValue: 1
-  IntValue: 0
+  Rarities:
+  - Rarity: 0
+    FloatValue: 0
+    IntValue: 5
+    Weight: 0.5
+  - Rarity: 1
+    FloatValue: 0
+    IntValue: 10
+    Weight: 0.3
+  - Rarity: 2
+    FloatValue: 0
+    IntValue: 15
+    Weight: 0.15
+  - Rarity: 3
+    FloatValue: 0
+    IntValue: 20
+    Weight: 0.05
+  NormalColor: {r: 0.735849, g: 0.735849, b: 0.735849, a: 1}
+  RareColor: {r: 0.39048594, g: 0.39048594, b: 0.7075472, a: 1}
+  EpicColor: {r: 0.6037736, g: 0.16233535, b: 0.6037736, a: 1}
+  LegendaryColor: {r: 0.7264151, g: 0.6895565, b: 0.26383942, a: 1}
